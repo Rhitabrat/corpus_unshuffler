@@ -164,7 +164,7 @@ train_args = {
     'save_model_every_epoch': False,
     'save_steps': 4000,
     'fp16': True,
-    'output_dir': '/outputs/',
+    'output_dir': 'outputs/',
     'evaluate_during_training': True,
 }
 

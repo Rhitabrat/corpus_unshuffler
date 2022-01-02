@@ -22,7 +22,7 @@ class SentenceClassifier():
     output_size: int
 
     # Properties set during Runtime
-    path: str
+    # path: str
 
     # Data and Labels for Training and Testing
     test_data: NDArray[Any, Any]
@@ -37,11 +37,11 @@ class SentenceClassifier():
 
     classifier: None
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, sentence_type: int):
         """ Constructor for Sentence Classification """
-        df = self.load_data(path)
+        df = self.load_data(path=path, sentence_type=sentence_type)
 
-    def load_data(self, path):
+    def load_data_old(self, path: str):
         data = []
 
         files = [os.path.join(path, f) for f in os.listdir(path)]
@@ -55,10 +55,6 @@ class SentenceClassifier():
 
         df = pd.DataFrame(data, columns=["article"] )
 
-        # return df
-        # df = self.load_data(path)
-
-
         print(f"df: \n{df}")
         print(f"df.article: \n{df.article}")
 
@@ -67,10 +63,9 @@ class SentenceClassifier():
 
         ''' 
         LABELS 
-
-        opening sentence, a -> 1
-        closing sentence, b -> 2
-        none, c -> 3
+        opening sentences: a -> 1
+        closing sentences: b -> 2
+        other   sentences: c -> 3
         '''
 
         label = [1, 2, 3]
@@ -102,8 +97,62 @@ class SentenceClassifier():
         ########################################################################
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.25, stratify=df_labeled['label'])
+
         print(f"y_train Counts: {self.y_train.value_counts()}")
         print(f"y_test Counts: {self.y_test.value_counts()}")
+
+    def load_data(self, path: str, sentence_type: int):
+        '''
+        LABELS
+        opening sentences: a -> 1
+        closing sentences: b -> 2
+        other   sentences: c -> 3
+        '''
+
+        label = [1, 2, 3]
+
+        sentences = []
+        labels = []
+
+        with open(path, "r", encoding="unicode_escape") as file:
+            sentences = file.read().splitlines()
+            file.close()
+
+        labels = [sentence_type] * len(sentences)
+
+        # self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.25, stratify=df_labeled['label'])
+
+        print(f"sentences:\n{sentences}")
+        print(f"\n\nlabels:\n{labels}")
+
+        print(f"sentence count: {len(sentences)}")
+        print(f"labels count: {len(labels)}")
+
+    def build_pipeline(self) -> None:
+
+        parameters = \
+            {
+                # 'count__max_df': (0.5, 0.75, 1.0),
+                # 'count__max_features': (None, 5000, 10000, 50000),
+                # 'count__ngram_range': ((1, 1), (1, 2)),  # unigrams or bigrams
+                # 'tfidf__use_idf': (True, False),
+                # 'tfidf__norm': ('l1', 'l2'),
+                # 'tfidf__max_features': [100, 2000],
+                # 'tfidf__ngram_range': [(1, 1), (1, 2), (1, 3), (2, 3)],
+                'tfidf__use_idf': (True, False),
+                'tfidf__ngram_range': [(1, 1), (1, 2), (1, 3), (2, 3), (3, 3)],
+                'tfidf__stop_words': [None, 'english'],
+
+                # 'clf__max_iter': (20,),
+                # 'clf__alpha': (0.00001, 0.000001),
+                # 'clf__penalty': ('l2', 'elasticnet'),
+                # 'clf__max_iter': (10, 50, 80),
+                'clf__alpha': (1, 0.1, 0.01)
+            }
+
+        pipeline = Pipeline([('tfidf', TfidfVectorizer()), ('clf', MultinomialNB())])
+        grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=1, cv=10)
+
 
     def train(self):
 
@@ -136,7 +185,8 @@ class SentenceClassifier():
 
 
 # path = '/content/drive/Othercomputers/My MacBook Pro/PSU/NLP Lab/Steve-Thesis/Data/bbcsport/football/'
-path = 'data/bbcsport/football/'
-sc = SentenceClassifier(path)
-sc.train()
-sc.test()
+# path = 'data/bbcsport/football/'
+path = "data/huff_headlines_clean.txt"
+sc = SentenceClassifier(path=path, sentence_type=1)
+# sc.train()
+# sc.test()

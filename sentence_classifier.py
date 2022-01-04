@@ -162,7 +162,7 @@ train_args = {
     'weight_decay': 0.01,
     'warmup_ratio': 0.2,
     'max_grad_norm': 1.0,
-    'num_train_epochs': 1,
+    'num_train_epochs': 5,
     'train_batch_size': 32,
     'save_model_every_epoch': False,
     'save_steps': 4000,

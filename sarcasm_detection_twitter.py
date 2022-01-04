@@ -37,6 +37,7 @@ If you're running this notebook in Google Colab, select `Runtime` > `Change Runt
 #### Install Dependencies and Restart Runtime
 """
 
+# Sbraich
 # !pip install -q transformers
 # !pip install -q simpletransformers
 
@@ -51,7 +52,7 @@ Here are the functions that will allow us to download the dataset from the [Gith
 
 import csv
 import urllib.request
-import pandas as pd
+
 
 def filtered(sentence):
   """Filter function that indication if sentence should be filtered.
@@ -75,7 +76,7 @@ def filtered(sentence):
   return False
 
 
-def download_and_clean(input_file, output_file, text_index, labels_index, to_filter=False):
+def clean(input_file, output_file, text_index, labels_index, to_filter=False):
   """Download and pre-process the paper's tweet dataset.
 
   Downloads the dataset from a url (github repository) of the Cai et al. (2019)
@@ -91,28 +92,38 @@ def download_and_clean(input_file, output_file, text_index, labels_index, to_fil
       to_filter: a boolean to indicate if this dataset should be filtered as
         per the papers preprocessing rules.
   """
-
   with open(output_file, 'w', newline='', encoding='utf-8') as csv_file:
-    csv_writer = csv.writer(csv_file, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     csv_writer.writerow(['text', 'labels'])
 
-    sentences = pd.read_csv(input_file, sep="\t", names=['sentence', 'label'])
-    for index, row in sentences.iterrows():
-        if not to_filter or not filtered(row['sentence']):
-            csv_writer.writerow([row['sentence'], row['label']])
+    # file = urllib.request.urlopen(input_file)
+    file = open(input_file, "r")
+    lines = file.readlines()
+    for line in lines:
+      # decoded_line = line.decode('utf-8')
+      # row = eval(decoded_line)
+      row = eval(line)
+
+      #row = line
+      if not to_filter or not filtered(row[text_index]):
+        csv_writer.writerow([row[text_index], row[labels_index]])
 
 """Now we use the above functions to download and pre-process the train, test and validation datasets from the paper's Github data repository. The output file are written to the local storage of the notebook as `train.csv`, `test.csv` and `validate.csv`."""
 
-download_and_clean('train.txt', 'train.csv', 0, 1, to_filter=True)
-download_and_clean('test.txt', 'test.csv', 0, 1)
-download_and_clean('valid.txt', 'validate.csv', 0, 1)
+# download_and_clean('https://raw.githubusercontent.com/headacheboy/data-of-multimodal-sarcasm-detection/master/text/train.txt', 'train.csv', 1, 2, to_filter=True)
+# download_and_clean('https://raw.githubusercontent.com/headacheboy/data-of-multimodal-sarcasm-detection/master/text/test2.txt', 'test.csv', 1, 3)
+# download_and_clean('https://raw.githubusercontent.com/headacheboy/data-of-multimodal-sarcasm-detection/master/text/valid2.txt', 'validate.csv', 1, 3)
+
+clean('sarcasm_train.txt', 'sarcasm_train.csv', 1, 2, to_filter=True)
+clean('sarcasm_test.txt',  'sarcasm_test.csv', 1, 3)
+clean('sarcasm_valid.txt', 'sarcasm_valid.csv', 1, 3)
 
 """Now we use pandas to read in the well-formatted `train.csv`, `test.csv` and `validate.csv` files into dataframes. We also take a look at the first few rows of the training set with the `.head()` function to check if our CSV files are loaded properly."""
 
-# import pandas as pd
-train_df = pd.read_csv('train.csv', delimiter="\t")
-test_df = pd.read_csv('test.csv', delimiter="\t")
-validate_df = pd.read_csv('validate.csv', delimiter="\t")
+import pandas as pd
+train_df = pd.read_csv('sarcasm_train.csv')
+test_df = pd.read_csv('sarcasm_test.csv')
+validate_df = pd.read_csv('sarcasm_valid.csv')
 train_df.head()
 
 """Next, we compare if our dataset size, after the pre-processing, is exactly the same as those reported in both the papers. **`0`** is the **`not sarcastic`** class while **`1`** is the **`sarcastic`** class.
@@ -159,7 +170,7 @@ train_args = {
     'weight_decay': 0.01,
     'warmup_ratio': 0.2,
     'max_grad_norm': 1.0,
-    'num_train_epochs': 1,
+    'num_train_epochs': 5,
     'train_batch_size': 32,
     'save_model_every_epoch': False,
     'save_steps': 4000,
@@ -185,16 +196,16 @@ transformers_logger = logging.getLogger('transformers')
 transformers_logger.setLevel(logging.WARNING)
 
 # We use the RoBERTa base pre-trained model.
-model = ClassificationModel('roberta', 'roberta-base', num_labels=2, args=train_args) 
+model = ClassificationModel(model_type='roberta', model_name='roberta-base', num_labels=2, args=train_args)
 
 # Train the model, use the validation set as the development set as per the paper.
 # When training to 1 epoch this is not that essential, however, if you decide to 
 # train more and configure early stopping, do check out the simple transformers
 # documentation: https://simpletransformers.ai/docs/tips-and-tricks/#using-early-stopping
-model.train_model(train_df, eval_df=validate_df)
+model.train_model(train_df=train_df, eval_df=validate_df)
 
 # Evaluate the model in terms of accuracy score
-result, model_outputs, wrong_predictions = model.eval_model(test_df, acc=sklearn.metrics.accuracy_score)
+result, model_outputs, wrong_predictions = model.eval_model(eval_df=test_df, acc=sklearn.metrics.accuracy_score)
 
 """We see that the output accuracy from the model after training for 1 epoch is **93.7%** ('acc': 0.9369032793690328).
 
@@ -205,7 +216,7 @@ Now we want to calculate the F1-score for the model.
 Since the class distribution (the number of **`sacarstic`** vs **`not sarcastic`**) is not balanced, [F1-score is a better accuracy measure](https://sebastianraschka.com/faq/docs/computing-the-f1-score.html). We calculate the F1-score of the model on the test set below.
 """
 
-result, model_outputs, wrong_predictions = model.eval_model(test_df, acc=sklearn.metrics.f1_score)
+result, model_outputs, wrong_predictions = model.eval_model(eval_df=test_df, acc=sklearn.metrics.f1_score)
 
 """The F1-score is **92.2%** ('acc': 0.9224489795918368) is **9.4 points** better than the state-of-the-art results reported in the Pan et al. (2020) paper at **82.9%** using just the textual features with RoBERTa instead of BERT. 
 
@@ -219,7 +230,7 @@ Running the model to do some predictions/inference is as simple as calling `mode
 samples = ['hell yeah !  # funny # sleepwell # dreamon # fail',
            'i could enter the olympics ! ;) rt <user> : ',
            'we ’ re excited to hold a q & a session with <user> tomorrow courtesy of <user> ! submit your questions by using # askabluejay ! # wt2017']
-predictions, _ = model.predict(samples)
+predictions, _ = model.predict(to_predict=samples)
 label_dict = {0: 'not sarcastic', 1: 'sarcastic'}
 for idx, sample in enumerate(samples):
   print('{}: {}, {}'.format(idx, sample, label_dict[predictions[idx]]))
@@ -229,6 +240,7 @@ for idx, sample in enumerate(samples):
 The root of your Google Drive will be mounted to `/content/drive/My Drive/`. If you have problems mounting the drive, you can check out this [tutorial](https://towardsdatascience.com/downloading-datasets-into-google-drive-via-google-colab-bcb1b30b0166).
 """
 
+# Sbraich
 # from google.colab import drive
 # drive.mount('/content/drive/')
 #

@@ -52,6 +52,7 @@ Here are the functions that will allow us to download the dataset from the [Gith
 
 import csv
 import urllib.request
+import pandas as pd
 
 
 def filtered(sentence):
@@ -96,17 +97,22 @@ def clean(input_file, output_file, text_index, labels_index, to_filter=False):
     csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     csv_writer.writerow(['text', 'labels'])
 
-    # file = urllib.request.urlopen(input_file)
-    file = open(input_file, "r")
-    lines = file.readlines()
-    for line in lines:
-      # decoded_line = line.decode('utf-8')
-      # row = eval(decoded_line)
-      row = eval(line)
+    # # file = urllib.request.urlopen(input_file)
+    # file = open(input_file, "r")
+    # lines = file.readlines()
+    # for line in lines:
+    #   # decoded_line = line.decode('utf-8')
+    #   # row = eval(decoded_line)
+    #   row = eval(line)
+    #   #row = line
+    #   if not to_filter or not filtered(row[text_index]):
+    #     csv_writer.writerow([row[text_index], row[labels_index]])
 
-      #row = line
-      if not to_filter or not filtered(row[text_index]):
-        csv_writer.writerow([row[text_index], row[labels_index]])
+    sentences = pd.read_csv(input_file, sep="\t", names=['sentence', 'label'])
+    for index, row in sentences.iterrows():
+      if not to_filter or not filtered(row['sentence']):
+        csv_writer.writerow([row['sentence'], row['label']])
+
 
 """Now we use the above functions to download and pre-process the train, test and validation datasets from the paper's Github data repository. The output file are written to the local storage of the notebook as `train.csv`, `test.csv` and `validate.csv`."""
 
@@ -114,16 +120,19 @@ def clean(input_file, output_file, text_index, labels_index, to_filter=False):
 # download_and_clean('https://raw.githubusercontent.com/headacheboy/data-of-multimodal-sarcasm-detection/master/text/test2.txt', 'test.csv', 1, 3)
 # download_and_clean('https://raw.githubusercontent.com/headacheboy/data-of-multimodal-sarcasm-detection/master/text/valid2.txt', 'validate.csv', 1, 3)
 
-clean('sarcasm_train.txt', 'sarcasm_train.csv', 1, 2, to_filter=True)
-clean('sarcasm_test.txt',  'sarcasm_test.csv', 1, 3)
-clean('sarcasm_valid.txt', 'sarcasm_valid.csv', 1, 3)
+# clean('sarcasm_train.txt', 'sarcasm_train.csv', 1, 2, to_filter=True)
+# clean('sarcasm_test.txt',  'sarcasm_test.csv', 1, 3)
+# clean('sarcasm_valid.txt', 'sarcasm_valid.csv', 1, 3)
+
+clean('headline_train.txt', 'headline_train.csv', 1, 2, to_filter=True)
+clean('headline_test.txt',  'headline_test.csv', 1, 3)
+clean('headline_valid.txt', 'headline_valid.csv', 1, 3)
+
 
 """Now we use pandas to read in the well-formatted `train.csv`, `test.csv` and `validate.csv` files into dataframes. We also take a look at the first few rows of the training set with the `.head()` function to check if our CSV files are loaded properly."""
-
-import pandas as pd
-train_df = pd.read_csv('sarcasm_train.csv')
-test_df = pd.read_csv('sarcasm_test.csv')
-validate_df = pd.read_csv('sarcasm_valid.csv')
+train_df = pd.read_csv('headline_train.csv')
+test_df = pd.read_csv('headline_test.csv')
+validate_df = pd.read_csv('headline_valid.csv')
 train_df.head()
 
 """Next, we compare if our dataset size, after the pre-processing, is exactly the same as those reported in both the papers. **`0`** is the **`not sarcastic`** class while **`1`** is the **`sarcastic`** class.

@@ -37,11 +37,12 @@ class SentenceClassifier():
 
     classifier: None
 
-    def __init__(self, path: str, sentence_type: int):
+    def __init__(self, path: str, sentence_type: int=1):
         """ Constructor for Sentence Classification """
-        df = self.load_data(path=path, sentence_type=sentence_type)
+        # df = self.load_data(path=path, sentence_type=sentence_type)
+        df = self.load_data(path=path)
 
-    def load_data_old(self, path: str):
+    def load_data(self, path: str):
         data = []
 
         files = [os.path.join(path, f) for f in os.listdir(path)]
@@ -87,6 +88,14 @@ class SentenceClassifier():
             list_of_labels.append(label[1])
 
         df_labeled = pd.DataFrame(list(zip(list_of_sentences, list_of_labels)), columns=["sentence", "label"])
+
+        selector = df_labeled['label'] == 1
+        df_labeled[selector][['sentence']].to_csv("headings.csv", index=False)
+        selector = df_labeled['label'] == 2
+        df_labeled[selector][['sentence']].to_csv("closings.csv", index=False)
+        selector = df_labeled['label'] == 3
+        df_labeled[selector][['sentence']].to_csv("others.csv", index=False)
+
         print(f"df_labeled: {df_labeled}")
 
         ########################################################################
@@ -101,7 +110,7 @@ class SentenceClassifier():
         print(f"y_train Counts: {self.y_train.value_counts()}")
         print(f"y_test Counts: {self.y_test.value_counts()}")
 
-    def load_data(self, path: str, sentence_type: int):
+    def load_data_new(self, path: str, sentence_type: int):
         '''
         LABELS
         opening sentences: a -> 1
@@ -185,8 +194,16 @@ class SentenceClassifier():
 
 
 # path = '/content/drive/Othercomputers/My MacBook Pro/PSU/NLP Lab/Steve-Thesis/Data/bbcsport/football/'
+
+# path = 'data/bbcsport/athletics/'
+# path = 'data/bbcsport/cricket/'
 # path = 'data/bbcsport/football/'
-path = "data/huff_headlines_clean.txt"
-sc = SentenceClassifier(path=path, sentence_type=1)
+# path = 'data/bbcsport/rugby/'
+# path = 'data/bbcsport/tennis/'
+path = 'data/bbcsport/'
+sc = SentenceClassifier(path=path)
+
+# path = "data/huff_headlines_clean.txt"
+# sc = SentenceClassifier(path=path, sentence_type=1)
 # sc.train()
 # sc.test()
